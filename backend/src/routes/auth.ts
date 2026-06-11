@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { OAuth2Client } from 'google-auth-library';
 import { query } from '../db/pool';
 import { config } from '../config/env';
 
 const router = Router();
+const googleClient = new OAuth2Client(config.google.clientId);
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -121,6 +123,80 @@ router.post('/login', async (req: Request, res: Response) => {
     }
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/google
+router.post('/google', async (req: Request, res: Response) => {
+  try {
+    const { credential, role } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ error: 'Google credential is required' });
+    }
+
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: config.google.clientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+
+    const { email, given_name, family_name, picture, sub: googleId } = payload;
+
+    // Check if user exists
+    const existing = await query('SELECT id, email, role, first_name, last_name FROM users WHERE email = $1', [email]);
+
+    let user;
+    if (existing.rows.length > 0) {
+      // Existing user — log them in
+      user = existing.rows[0];
+    } else {
+      // New user — create account (default to 'parent' if no role specified)
+      const userRole = role || 'parent';
+      const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+
+      const result = await query(
+        `INSERT INTO users (email, password_hash, role, first_name, last_name, avatar_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, email, role, first_name, last_name`,
+        [email, randomPassword, userRole, given_name || 'User', family_name || '', picture || null]
+      );
+
+      user = result.rows[0];
+
+      // Create role-specific profile
+      if (userRole === 'parent') {
+        await query('INSERT INTO parent_profiles (user_id) VALUES ($1)', [user.id]);
+      } else {
+        await query('INSERT INTO babysitter_profiles (user_id) VALUES ($1)', [user.id]);
+      }
+    }
+
+    // Issue JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      config.jwt.secret,
+      { expiresIn: '7d' } as jwt.SignOptions
+    );
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(401).json({ error: 'Google authentication failed' });
   }
 });
 

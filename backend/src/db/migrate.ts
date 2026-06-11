@@ -1,4 +1,4 @@
-import { pool } from './pool';
+import { pool, query } from './pool';
 
 const migrations = `
 -- Enable PostGIS extension for geospatial queries
@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
 async function migrate() {
   console.log('Running database migrations...');
   try {
-    await pool.query(migrations);
+    await query(migrations);
     console.log('Migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

@@ -1,5 +1,7 @@
 const API_BASE = '/api';
 
+export const GOOGLE_CLIENT_ID = '47836313925-rd91at0hpaunis4dud11dip04ml4cs7p.apps.googleusercontent.com';
+
 interface LoginData {
   email: string;
   password: string;
@@ -31,6 +33,7 @@ async function request(endpoint: string, options: RequestInit = {}) {
 export const api = {
   login: (data: LoginData) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   register: (data: RegisterData) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  googleAuth: (credential: string, role?: string) => request('/auth/google', { method: 'POST', body: JSON.stringify({ credential, role }) }),
   getProfile: () => request('/profile'),
   updateProfile: (data: Record<string, unknown>) => request('/profile', { method: 'PATCH', body: JSON.stringify(data) }),
   getNearbyBabysitters: (lat: number, lng: number, radius = 10) =>

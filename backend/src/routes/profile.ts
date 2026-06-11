@@ -59,8 +59,10 @@ router.patch('/', authenticate, async (req: AuthRequest, res: Response) => {
       if (city) { setClauses.push(`city = $${paramIndex++}`); values.push(city); }
       if (address) { setClauses.push(`address = $${paramIndex++}`); values.push(address); }
       if (latitude && longitude) {
-        setClauses.push(`location = ST_SetSRID(ST_MakePoint($${paramIndex++}, $${paramIndex++}), 4326)::geography`);
-        values.push(longitude, latitude);
+        setClauses.push(`latitude = $${paramIndex++}`);
+        values.push(latitude);
+        setClauses.push(`longitude = $${paramIndex++}`);
+        values.push(longitude);
       }
 
       setClauses.push(`updated_at = NOW()`);

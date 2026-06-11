@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -26,6 +27,18 @@ export default function Register() {
     }
   };
 
+  const handleGoogleSuccess = async (credential: string) => {
+    setError('');
+    try {
+      const data = await api.googleAuth(credential, form.role);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
   return (
@@ -43,6 +56,14 @@ export default function Register() {
             style={{ flex: 1 }} onClick={() => update('role', 'babysitter')}>
             🧑‍🍼 I'm a Babysitter
           </button>
+        </div>
+
+        <GoogleSignInButton onSuccess={handleGoogleSuccess} text="signup_with" />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.5rem 0' }}>
+          <hr style={{ flex: 1, border: 'none', borderTop: '1px solid #e2e8f0' }} />
+          <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>or register with email</span>
+          <hr style={{ flex: 1, border: 'none', borderTop: '1px solid #e2e8f0' }} />
         </div>
 
         <input className="input" placeholder="First Name" value={form.firstName} onChange={e => update('firstName', e.target.value)} required />
