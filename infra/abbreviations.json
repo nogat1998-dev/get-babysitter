@@ -1,0 +1,8 @@
+{
+  "containerAppsEnv": "cae-",
+  "containerApp": "ca-",
+  "containerRegistry": "cr",
+  "dbForPostgreSQL": "psql-",
+  "logAnalytics": "log-",
+  "managedIdentity": "id-"
+}

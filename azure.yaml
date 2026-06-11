@@ -1,0 +1,16 @@
+name: get-babysitter
+metadata:
+  template: get-babysitter@0.0.1
+services:
+  backend:
+    project: ./backend
+    host: containerapp
+    language: ts
+    docker:
+      path: ./backend/Dockerfile
+  frontend:
+    project: ./frontend
+    host: containerapp
+    language: ts
+    docker:
+      path: ./frontend/Dockerfile
